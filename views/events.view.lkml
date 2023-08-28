@@ -1,53 +1,189 @@
-include: "/upstream_views/raw_events.view.lkml"
 view: events {
-  sql_table_name: @{events_table} ;;
-  extends: [raw_events]
+  sql_table_name: `gaming.events_sessionized` ;;
 
-# Configured fields from manifest file:
-dimension_group: event { type:time sql: ${TABLE}.@{timestamp_field} ;;}
-dimension: user_id { type:string sql: ${TABLE}.@{user_id_field} ;; }
-dimension: event_name { type:string sql: ${TABLE}.@{event_name_field} ;; }
-dimension: country { type: string sql: ${TABLE}.@{country_field} ;;}
-dimension: device_platform { type: string sql: ${TABLE}.@{platform_field} ;; }
-dimension: game_version { type: string sql: ${TABLE}.@{version_field} ;; }
-dimension: game_name { type: string sql: ${TABLE}.@{game_name_field} ;; }
-dimension: acquisition_cost { type:number description: "How much did this player cost to acquire?" sql: ${TABLE}.@{acquisition_cost_field} ;;}
-dimension: iap_revenue { type:number description: "Amount of $ paid for this purchase" sql: ${TABLE}.@{iap_revenue_field} ;;}
-dimension: ad_revenue { type:number description: "Amount of $ made by watching an ad" sql: ${TABLE}.@{ad_revenue_field} ;;}
+  dimension: unique_event_id {
+    primary_key: yes
+    type: string
+    sql: ${TABLE}.unique_event_id ;;
+  }
 
+  dimension: ad_revenue {
+    type: number
+    sql: ${TABLE}.ad_revenue ;;
+  }
+
+  dimension: continent {
+    group_label: "Location"
+    type: string
+    sql: ${TABLE}.continent ;;
+  }
+
+  dimension: region {
+    group_label: "Location"
+    type: string
+    sql: ${TABLE}.region ;;
+  }
+
+  dimension: country {
+    group_label: "Location"
+    type: string
+    map_layer_name: countries
+    sql: ${TABLE}.country ;;
+  }
+
+  dimension: device_brand {
+    type: string
+    sql: ${TABLE}.device_brand ;;
+  }
+
+  dimension: device_language {
+    type: string
+    sql: ${TABLE}.device_language ;;
+  }
+
+  dimension: device_model {
+    type: string
+    sql: ${TABLE}.device_model ;;
+  }
+
+  dimension: device_os_version {
+    type: string
+    sql: ${TABLE}.device_os_version ;;
+  }
+
+  dimension: device_platform {
+    type: string
+    sql: ${TABLE}.device_platform ;;
+  }
+
+  dimension_group: event {
+    type: time
+    timeframes: [
+      raw,
+      time,
+      minute,
+      date,
+      month_name,
+      day_of_month,
+      week,
+      month,
+      quarter,
+      year
+    ]
+    sql: ${TABLE}.event ;;
+  }
+
+  dimension: event_name {
+    type: string
+    sql: ${TABLE}.event_name ;;
+  }
+
+  dimension: game_name {
+    type: string
+    sql: ${TABLE}.game_name ;;
+  }
+
+  dimension: game_version {
+    type: string
+    sql: ${TABLE}.game_version ;;
+  }
+
+  dimension: iap_revenue {
+    type: number
+    sql: ${TABLE}.iap_revenue ;;
+  }
+
+  dimension: install_cost {
+    type: number
+    sql: ${TABLE}.install_cost ;;
+  }
+
+  dimension: ad_network {
+    type: string
+    sql: ${TABLE}.ad_network ;;
+  }
+
+  dimension: user_id {
+    type: string
+    sql: ${TABLE}.user_id ;;
+  }
+
+  dimension: player_level {
+    type: number
+    sql: ${TABLE}.player_level ;;
+  }
+
+  dimension: player_session_sequence {
+    type: number
+    sql: ${TABLE}.player_session_sequence ;;
+  }
+
+  dimension_group: user_first_seen {
+    type: time
+    timeframes: [
+      raw,
+      time,
+      date,
+      week,
+      month,
+      quarter,
+      year
+    ]
+    sql: ${TABLE}.user_first_seen ;;
+  }
+
+# Session stuff
+  dimension: unique_session_id {
+    type: string
+    value_format_name: id
+    hidden: yes
+    sql: ${TABLE}.unique_session_id ;;
+  }
+
+  dimension: event_sequence_within_session {
+    type: number
+    value_format_name: id
+    sql: ${TABLE}.event_sequence_within_session ;;
+  }
+
+  dimension: inverse_event_sequence_within_session {
+    type: number
+    value_format_name: id
+    sql: ${TABLE}.inverse_event_sequence_within_session ;;
+  }
 
 
 # Drill Selector
-parameter: drill_by {
-  type: string
-  default_value: "device_platform"
-  allowed_value: { label: "Country" value: "country" }
-  allowed_value: { label: "Platform" value: "device_platform" }
-  allowed_value: { label: "Game" value: "game_name" }
-  allowed_value: { label: "Game Version" value: "game_version" }
-  allowed_value: { label: "Install Source" value: "install_source" }
-}
+  parameter: drill_by {
+    type: string
+    default_value: "device_platform"
+    allowed_value: { label: "Country" value: "country" }
+    allowed_value: { label: "Platform" value: "device_platform" }
+    allowed_value: { label: "Game" value: "game_name" }
+    allowed_value: { label: "Game Version" value: "game_version" }
+    allowed_value: { label: "Install Source" value: "install_source" }
+  }
 
-dimension: drill_field {
-  hidden: yes
-  type: string
-  label_from_parameter: drill_by
-  sql:
-  {% case  drill_by._parameter_value %}
-    {% when "'country'" %}
-      ${country}
-    {% when "'device_platform'" %}
-      ${device_platform}
-    {% when "'game_name'" %}
-      ${game_name}
-    {% when "'game_version'" %}
-      ${game_version}
-    {% when "'install_source'" %}
-      ${install_source}
-    {% else %}
-     null
-  {% endcase %} ;;
-}
+  dimension: drill_field {
+    hidden: yes
+    type: string
+    label_from_parameter: drill_by
+    sql:
+      {% case  drill_by._parameter_value %}
+        {% when "'country'" %}
+          ${country}
+        {% when "'device_platform'" %}
+          ${device_platform}
+        {% when "'game_name'" %}
+          ${game_name}
+        {% when "'game_version'" %}
+          ${game_version}
+        {% when "'install_source'" %}
+          ${install_source}
+        {% else %}
+         null
+      {% endcase %} ;;
+  }
 
 # Dimensions
   dimension: install_group {
@@ -57,11 +193,20 @@ dimension: drill_field {
             WHEN ${install_source} = 'organic' then 'organic'
             ELSE 'paid'
           END ;;
-          drill_fields: [install_source]
+    drill_fields: [install_source]
   }
 
   dimension: install_source {
+    type: string
+    sql: ${TABLE}.install_source ;;
     drill_fields: [campaign_name]
+
+
+  }
+
+  dimension: campaign_id {
+    type: string
+    sql: ${TABLE}.campaign_id ;;
   }
 
   dimension: campaign_name {
@@ -69,6 +214,7 @@ dimension: drill_field {
       label: "Manage this campaign in {{ events.install_source._value }}"
       url: "http://{{events.install_source._value}}/manage/{{value}}"
     }
+    sql: ${TABLE}.campaign_name ;;
   }
 
   dimension: campaign_type {
@@ -83,14 +229,9 @@ dimension: drill_field {
     drill_fields: [install_source,campaign_name]
   }
 
-  dimension: is_top_10_country {
-    type: yesno
-    sql: ${country} in ('United States','Russia','Germany','Turkey','United Kingdom','Vietnam','France','Poland','Mexico','Brazil' ) ;;
-  }
-
   dimension: is_first_session {
     type: yesno
-    sql: ${sessions.player_session_sequence} = '1' ;;
+    sql: ${player_session_sequence} = '1' ;;
   }
 
 
@@ -119,7 +260,7 @@ dimension: drill_field {
 
   measure: number_of_paid_users {
     group_label: "User Counts"
-    label: "Number of non-organic users"
+    description: "User's acquired through paid channels"
     type: count_distinct
     sql: ${user_id};;
     filters: {
@@ -145,9 +286,21 @@ dimension: drill_field {
   measure: number_of_ads_shown {
     group_label: "Event Counts"
     type: count
+    value_format_name: large_number
     filters: {
       field: event_name
       value: "Ad_Watched"
+    }
+    drill_fields: [drill_field,count]
+  }
+
+  measure: number_of_level_ups {
+    group_label: "Event Counts"
+    type: count
+    value_format_name: large_number
+    filters: {
+      field: event_name
+      value: "Level_Up"
     }
     drill_fields: [drill_field,count]
   }
@@ -161,9 +314,40 @@ dimension: drill_field {
     drill_fields: [drill_field,ads_shown_per_user]
   }
 
+  measure: number_of_sesssions {
+    type: count_distinct
+    value_format_name: large_number
+    sql: ${unique_session_id} ;;
+    drill_fields: [drill_field,number_of_sesssions]
+  }
+
 # Misc
+  dimension: user_time_bucketed {
+    hidden: yes
+    type: string
+    sql: CONCAT(${event_minute}, ${user_id} ) ;;
+  }
+
+  measure: number_of_time_buckets {     # Counts the number of minute buckets for each user
+    hidden: yes
+    type: count_distinct
+    sql: ${user_time_bucketed} ;;
+  }
+
+  measure: approximate_usage_in_minutes {  # Multiply number of buckets by 2 to get approximate usage in minutes
+    group_label: "Usage"
+    type: number
+    sql: ${number_of_time_buckets} ;;
+  }
+
+  measure: average_usage_minutes_per_user {
+    group_label: "Usage"
+    type: number
+    sql: 1.0*${approximate_usage_in_minutes}/nullif(${number_of_users},0) ;;
+  }
 
   dimension_group: current {
+    hidden: yes
     description: "the time right now"
     type: time
     sql: CURRENT_TIMESTAMP() ;;
@@ -172,9 +356,20 @@ dimension: drill_field {
   dimension: days_since_user_signup {
     type: number
     description: "Days since first seen (from today)"
-    sql:  DATE_DIFF(${current_date}, ${user_facts.player_first_seen_date}, DAY);;
+    sql:  DATE_DIFF(${current_date}, ${user_first_seen_date}, DAY);;
   }
 
+  dimension: event_type {
+    description: "monetization,progression,onboarding,gameplay"
+    type: string
+    sql: case
+          when ${event_name} in ('Ad_Watched','IAP_Started','in_app_purchase') then 'monetization'
+          when ${event_name} in ('Level_Up','Skin_Unlocked','Gem_Spend') then 'progression'
+          when ${event_name} in ('FTUE_Stage_Complete','FTUE_Stage_Started') then 'onboarding'
+          when ${event_name} in ('Session_Started','Harvest_Done','Match_Ended','Match_Started') then 'gameplay'
+          else 'other'
+          end ;;
+  }
 
 
 # Retention
@@ -183,10 +378,10 @@ dimension: drill_field {
     group_label: "Retention"
     description: "Days since first seen (from event date)"
     type:  number
-    sql:  DATE_DIFF(${event_date}, ${user_facts.player_first_seen_date}, DAY);;
+    sql:  DATE_DIFF(${event_date}, ${user_first_seen_date}, DAY);;
   }
 
- # D1
+  # D1
 
   measure: d1_retained_users {
     group_label: "Retention"
@@ -339,9 +534,10 @@ dimension: drill_field {
 
   measure: total_install_spend {
     group_label: "User Acquistion"
+    label: "Total Marketing Spend"
     description: "Total spent to acquire users"
     type: sum
-    sql: ${acquisition_cost} ;;
+    sql: ${install_cost} ;;
     value_format_name: large_usd
     drill_fields: [drill_field,total_install_spend]
   }
@@ -365,58 +561,58 @@ dimension: drill_field {
 
 # Monetization
 
-dimension: is_paying_user {
-  type: yesno
-  description: "Had an IAP purhcase in selected time period"
-  sql: ${iap_revenue} > 0 ;;
-}
-
-dimension: is_iap_purchase {
-  type: yesno
-  hidden: yes
-  sql: ${event_name} = 'in_app_purchase' ;;
-}
-
-dimension: iap_purchase_tier {
-  group_label: "Monetization"
-  label: "IAP Purchase Tier"
-  description: "How big was each purchase?"
-  type: tier
-  tiers: [0,10,20,30]
-  sql: ${iap_revenue} ;;
-  style: integer
-  value_format_name: usd_0
-}
-
-measure: number_of_iap_purchases {
-  group_label: "Monetization"
-  label: "Number of IAP Purchases"
-  type: count
-  filters: {
-    field: is_iap_purchase
-    value: "yes"
+  dimension: is_paying_user {
+    type: yesno
+    description: "Had an IAP purhcase in selected time period"
+    sql: ${iap_revenue} > 0 ;;
   }
-  drill_fields: [drill_field,total_iap_revenue]
-}
 
-measure: transactions_per_spender {
-  type: number
-  description: "For paying users, how many transactions do they make"
-  group_label: "Monetization"
-  sql: 1.0 * ${number_of_iap_purchases}/nullif(${number_of_spenders},0) ;;
-  value_format_name: decimal_2
-  drill_fields: [drill_field,transactions_per_spender]
-}
+  dimension: is_iap_purchase {
+    type: yesno
+    hidden: yes
+    sql: ${event_name} = 'in_app_purchase' ;;
+  }
 
-measure: total_iap_revenue {
-  label: "Total IAP Revenue"
-  group_label: "Monetization"
-  description: "Total Revenue from In-App Purchases"
-  type: sum
-  sql: ${iap_revenue} ;;
-  value_format_name: large_usd
-  drill_fields: [drill_field,total_iap_revenue]
-}
+  dimension: iap_purchase_tier {
+    group_label: "Monetization"
+    label: "IAP Purchase Tier"
+    description: "How big was each purchase?"
+    type: tier
+    tiers: [0,10,20,30]
+    sql: ${iap_revenue} ;;
+    style: integer
+    value_format_name: usd_0
+  }
+
+  measure: number_of_iap_purchases {
+    group_label: "Monetization"
+    label: "Number of IAP Purchases"
+    type: count
+    filters: {
+      field: is_iap_purchase
+      value: "yes"
+    }
+    drill_fields: [drill_field,total_iap_revenue]
+  }
+
+  measure: transactions_per_spender {
+    type: number
+    description: "For paying users, how many transactions do they make"
+    group_label: "Monetization"
+    sql: 1.0 * ${number_of_iap_purchases}/nullif(${number_of_spenders},0) ;;
+    value_format_name: decimal_2
+    drill_fields: [drill_field,transactions_per_spender]
+  }
+
+  measure: total_iap_revenue {
+    label: "Total IAP Revenue"
+    group_label: "Monetization"
+    description: "Total Revenue from In-App Purchases"
+    type: sum
+    sql: ${iap_revenue} ;;
+    value_format_name: large_usd
+    drill_fields: [drill_field,total_iap_revenue]
+  }
 
   measure: total_ad_revenue {
     group_label: "Monetization"
@@ -453,7 +649,7 @@ measure: total_iap_revenue {
   }
 
   measure: total_revenue_from_paid_users {
-      group_label: "Monetization"
+    group_label: "Monetization"
     description: "IAP + Ad Revenue (for users acquiried by marketing)"
     type: sum
     sql: ${combined_revenue} ;;
@@ -639,20 +835,92 @@ measure: total_iap_revenue {
     drill_fields: [drill_field,d30_revenue_per_retained_user]
   }
 
+
+  measure: ltv {
+    label: "LTV"
+    description: "ARPU x days played "
+    type: number
+    sql: ${average_revenue_per_user} * ${days_played} ;;
+    value_format_name: usd
+  }
+
   ### For Calculating User Fact Table with Native Derived Table
 
   measure: player_first_seen {
-    group_label: "User Fact Table"
+    group_label: "Fact Table"
     description: "Not for direct use, use for NDT"
     type: date_time
     sql: min(${event_raw}) ;;
   }
 
   measure: player_last_seen {
-    group_label: "User Fact Table"
+    group_label: "Fact Table"
     description: "Not for direct use, use for NDT"
     type: date_time
     sql: max(${event_raw}) ;;
+  }
+
+  measure: highest_level_reached {
+    type: max
+    sql: IFNULL(${TABLE}.player_level,0) ;;
+    group_label: "Fact Table"
+    description: "Not for direct use, use for NDT"
+  }
+
+  measure: days_played {
+    type: count_distinct
+    sql: ${event_date} ;;
+    group_label: "Fact Table"
+    description: "Not for direct use, use for NDT"
+  }
+
+  measure: most_commonly_used_device {
+    type: string
+    sql: max(${device_model}) ;;
+    group_label: "Fact Table"
+    description: "Not for direct use, use for NDT"
+  }
+
+  measure: number_of_devices_used {
+    type: count_distinct
+    sql: ${device_model} ;;
+    group_label: "Fact Table"
+    description: "Not for direct use, use for NDT"
+  }
+
+  measure: most_commonly_played_country {
+    type: string
+    sql: max(${country}) ;;
+    group_label: "Fact Table"
+    description: "Not for direct use, use for NDT"
+  }
+
+  measure: number_of_countries_played_in {
+    type: count_distinct
+    group_label: "Fact Table"
+    description: "Not for direct use, use for NDT"
+    sql: ${country} ;;
+  }
+
+  measure: first_event {
+    type: date_time
+    group_label: "Fact Table"
+    description: "Not for direct use, use for NDT"
+    sql: min(${event_raw}) ;;
+  }
+
+  measure: latest_event {
+    type: date_time
+    group_label: "Fact Table"
+    description: "Not for direct use, use for NDT"
+    sql: max(${event_raw}) ;;
+  }
+
+  dimension_group: since_session_start {
+    type: duration
+    intervals: [second,minute]
+    sql_start: ${session_facts.session_start_at_raw} ;;
+    sql_end: ${event_raw} ;;
   }
 
 
