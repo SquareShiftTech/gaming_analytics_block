@@ -279,7 +279,7 @@
     pivots: [events.country]
     filters:
       events.retention_day: "<=7"
-      events.is_top_10_country: 'Yes'
+      # events.is_top_10_country: 'Yes'
     sorts: [events.country 0, events.retention_day]
     limit: 500
     column_limit: 50
