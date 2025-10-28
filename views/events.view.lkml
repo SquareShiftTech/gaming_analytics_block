@@ -1,5 +1,5 @@
 view: events {
-  sql_table_name: `gaming.events_sessionized` ;;
+  sql_table_name: `looker-private-demo.gaming.events_sessionized` ;;
 
   dimension: unique_event_id {
     primary_key: yes
